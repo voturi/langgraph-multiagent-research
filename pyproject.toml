@@ -1,0 +1,124 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "framework-agnostic-app"
+version = "0.1.0"
+description = "A framework-agnostic Python application template with clean architecture"
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.9"
+keywords = ["clean-architecture", "domain-driven-design", "framework-agnostic"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent", 
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "pydantic>=2.0.0",
+    "typing-extensions>=4.5.0",
+    # Optional orchestration frameworks
+    "langgraph>=0.2.0;extra=='langgraph'",
+    "langchain>=0.3.0;extra=='langgraph'",
+    "langchain-core>=0.3.0;extra=='langgraph'",
+    "langchain-openai>=0.2.0;extra=='langchain-openai'",
+    "langchain-anthropic>=0.2.0;extra=='langchain-anthropic'",
+]
+
+[project.optional-dependencies]
+# Orchestration frameworks
+langgraph = [
+    "langgraph>=0.2.0",
+    "langchain>=0.3.0", 
+    "langchain-core>=0.3.0",
+]
+# LLM providers
+openai = ["langchain-openai>=0.2.0"]
+anthropic = ["langchain-anthropic>=0.2.0"]
+# Infrastructure
+sqlite = ["aiosqlite>=0.19.0"]
+postgresql = ["asyncpg>=0.28.0", "sqlalchemy>=2.0.0"]
+redis = ["redis>=5.0.0"]
+# API frameworks
+fastapi = ["fastapi>=0.104.0", "uvicorn>=0.24.0"]
+flask = ["flask>=2.3.0"]
+# Development
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+    "pre-commit>=3.0.0",
+]
+# All extras
+all = [
+    "framework-agnostic-app[langgraph,openai,anthropic,sqlite,postgresql,redis,fastapi,dev]"
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/framework-agnostic-app"
+Repository = "https://github.com/yourusername/framework-agnostic-app.git"
+Issues = "https://github.com/yourusername/framework-agnostic-app/issues"
+
+[project.scripts]
+app-cli = "app.api.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# Black formatting
+[tool.black]
+line-length = 88
+target-version = ['py39']
+include = '\.pyi?$'
+
+# isort configuration
+[tool.isort] 
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["app"]
+
+# MyPy configuration
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+# Pytest configuration  
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = [
+    "--cov=src/app",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--strict-markers",
+]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+markers = [
+    "slow: marks tests as slow",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
