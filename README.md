@@ -1,34 +1,48 @@
-# Framework-Agnostic Application Template
+# LangGraph Research Agent - Production
 
-A comprehensive Python application template that follows **Clean Architecture** principles to keep domain logic completely separated from framework concerns. This design makes it easy to swap out orchestration frameworks, databases, APIs, and other infrastructure components without affecting business logic.
+🔬 **A production-ready AI research assistant built with LangGraph and clean architecture principles**
+
+This system creates AI analyst personas, conducts structured interviews, performs web research, and generates comprehensive research reports with human-in-the-loop feedback.
+
+## 🎯 Project Objectives
+
+- **Multi-Analyst Research**: Generate diverse AI analyst personas to explore topics from multiple perspectives
+- **Interactive Workflow**: Human-in-the-loop feedback system for analyst refinement
+- **Structured Intelligence**: Conduct AI-driven interviews with expert search and synthesis
+- **Production Ready**: Clean architecture, robust error handling, and comprehensive testing
+- **Framework Agnostic**: Easily swap orchestration frameworks while preserving business logic
 
 ## 🏗️ Architecture Overview
 
-This template implements a **layered architecture** that isolates concerns and dependencies:
+This research agent follows **Clean Architecture** principles with clear separation of concerns:
 
 ```
 ┌─────────────────────────────────────────────────┐
-│                 API Layer                       │
-│            (REST, CLI, GraphQL)                 │
+│           Interactive Interface                 │
+│        (interactive_research_assistant.py)     │
 ├─────────────────────────────────────────────────┤
 │              Orchestration Layer                │
-│         (LangGraph, Airflow, etc.)             │
+│         (LangGraph Research Workflow)          │
+├─────────────────────────────────────────────────┤
+│            Application Layer                    │
+│          (Research Workflows)                   │
 ├─────────────────────────────────────────────────┤
 │               Domain Layer                      │
-│    (Business Logic, Services, Entities)        │
+│     (Research Logic, Analysts, Interviews)     │
 ├─────────────────────────────────────────────────┤
 │            Infrastructure Layer                 │
-│    (Databases, External APIs, Caching)         │
+│    (OpenAI, Tavily, Wikipedia, Storage)       │
 └─────────────────────────────────────────────────┘
 ```
 
-### Key Principles
+### Research Workflow
 
-- **🎯 Domain-First**: Business logic lives in framework-agnostic domain services
-- **🔌 Pluggable**: Swap LangGraph for other orchestration frameworks easily  
-- **📦 Dependency Inversion**: Dependencies point inward to domain layer
-- **🧪 Testable**: Pure domain logic can be unit tested without infrastructure
-- **📈 Scalable**: Clean separation allows independent scaling of components
+1. **Topic Analysis** → AI analyzes research topic and context
+2. **Analyst Generation** → Creates diverse expert personas (2-5 analysts)
+3. **Human Feedback** → User reviews and refines analyst selection
+4. **Interview Execution** → AI conducts structured interviews with each analyst
+5. **Research Synthesis** → Searches web, processes information, generates sections
+6. **Report Compilation** → Produces comprehensive research report with citations
 
 ## 🚀 Quick Start
 
@@ -37,166 +51,239 @@ This template implements a **layered architecture** that isolates concerns and d
 ```bash
 # Clone the repository
 git clone <your-repo-url>
-cd langgraph-audio-agnostic
+cd langgraph-research-agent-prod
 
-# Install base dependencies
+# Install dependencies
 pip install -e .
-
-# Install with specific extras
-pip install -e ".[langgraph,openai,dev]"  # For LangGraph + OpenAI
-pip install -e ".[all]"                   # Install everything
 ```
 
-### 2. Basic Usage
+### 2. Environment Setup
 
-The application is designed to be framework-agnostic. Here's how to use it:
+```bash
+# Copy environment template
+cp .env.example .env
 
-#### Option A: Direct Domain Services (Framework-Agnostic)
-
-```python
-from app.domain.services import ConversationService
-from app.domain.models.value_objects import ExecutionContext, UserId, ConversationId
-
-# Use domain services directly (no framework required)
-context = ExecutionContext(
-    user_id=UserId("user_123"),
-    conversation_id=None,  # Will create new
-    session_id="session_456"
-)
-
-# Business logic is completely framework-independent
-result = await conversation_workflow.execute_workflow(
-    "simple_chat",
-    context,
-    {"message": "Hello, world!"}
-)
+# Edit .env with your API keys
+vim .env
 ```
 
-#### Option B: LangGraph Orchestration
+Required API keys:
+- `OPENAI_API_KEY` - For LLM operations
+- `TAVILY_API_KEY` - For web search
+- `LANGSMITH_API_KEY` - (Optional) For tracing
 
-```python
-from app.orchestration.langgraph import LangGraphOrchestrator
+### 3. Run Research Assistant
 
-# LangGraph is just one possible orchestration layer
-orchestrator = LangGraphOrchestrator(conversation_workflow, **deps)
-
-result = await orchestrator.execute_workflow(
-    "simple_chat",
-    context, 
-    {"message": "Hello, world!"}
-)
+```bash
+# Start interactive research session
+python interactive_research_assistant.py
 ```
 
-#### Option C: Alternative Orchestration
+### Example Research Session
 
-```python
-# Easy to swap to different orchestration frameworks
-from app.orchestration.airflow import AirflowOrchestrator  # Hypothetical
-from app.orchestration.celery import CeleryOrchestrator    # Hypothetical
+```
+🔍 Research topic: "AI applications in sustainable energy"
+📊 Configuration: 3 analysts, 2 interview turns
 
-# Same interface, different implementation
-orchestrator = AirflowOrchestrator(conversation_workflow, **deps)
+👥 Generated Analysts:
+1. Dr. Sarah Chen - Renewable Energy Systems Engineer
+2. Prof. Michael Torres - AI Policy Researcher  
+3. Lisa Zhang - Clean Tech Venture Capitalist
+
+💬 Human Feedback: "Add more focus on policy implications"
+
+🔄 Research Execution:
+   ✅ Conducted 3 expert interviews
+   ✅ Searched 15 information sources
+   ✅ Generated 3 research sections
+   ✅ Compiled final report with 25+ citations
 ```
 
 ## 📁 Project Structure
 
 ```
 src/app/
-├── domain/                     # 🎯 Core business logic (framework-agnostic)
-│   ├── models/                 #   Domain entities & value objects
-│   │   ├── entities.py         #   Business entities (User, Conversation, etc.)
-│   │   ├── value_objects.py    #   Immutable value objects & IDs
-│   │   └── events.py           #   Domain events
-│   ├── services/               #   Business logic services  
-│   │   ├── conversation_service.py  #   Conversation business logic
-│   │   ├── task_service.py          #   Task management logic
-│   │   └── user_service.py          #   User management logic
-│   └── interfaces/             #   Abstract interfaces for external dependencies
-│       ├── repositories.py     #   Data access interfaces
-│       ├── services.py         #   External service interfaces (LLM, etc.)
-│       └── events.py           #   Event handling interfaces
-├── orchestration/              # 🔌 Orchestration layer (swappable)
-│   ├── workflows/              #   Framework-agnostic workflow definitions
-│   │   ├── base.py             #   Base orchestrator interface
-│   │   └── conversation_workflow.py  #   Conversation workflow logic
-│   └── langgraph/              #   LangGraph-specific implementation
-│       ├── orchestrator.py     #   LangGraph orchestrator
-│       ├── nodes.py            #   LangGraph nodes (thin wrappers)
-│       └── state.py            #   LangGraph state schema
-├── infrastructure/             # 🏗️ Infrastructure implementations
-│   ├── repositories/           #   Database implementations
-│   ├── integrations/           #   External service integrations
-│   └── config/                 #   Configuration management
-└── api/                        # 🌐 API layer (also swappable)
-    ├── rest/                   #   REST API (FastAPI, Flask, etc.)
-    └── cli/                    #   Command-line interface
+├── domain/                          # 🎯 Core research logic
+│   ├── entities/
+│   │   └── research.py              # Analyst, Interview, ResearchProject
+│   ├── services/
+│   │   ├── research_service.py      # Research coordination
+│   │   ├── analyst_service.py       # Analyst generation & validation
+│   │   └── interview_service.py     # Interview management
+│   ├── interfaces/
+│   │   ├── research_repositories.py # Data access contracts
+│   │   ├── services.py             # External service contracts
+│   │   └── events.py               # Event handling
+│   └── models/
+│       ├── entities.py             # Base domain entities
+│       ├── value_objects.py        # Immutable value types
+│       └── events.py               # Domain events
+├── application/
+│   └── workflows/
+│       └── research_workflow.py     # 🔄 Main research workflow
+├── orchestration/
+│   └── langgraph/                   # 🔀 LangGraph implementation
+│       ├── research_orchestrator.py # Workflow orchestration
+│       ├── research_nodes.py        # Individual workflow nodes
+│       ├── research_state.py        # Workflow state management
+│       └── research_entry.py        # Entry point & dependencies
+└── infrastructure/                   # 🏗️ External integrations
+    ├── services/
+    │   ├── research_llm_service.py  # OpenAI integration
+    │   ├── tavily_service.py        # Web search integration
+    │   ├── wikipedia_service.py     # Wikipedia integration
+    │   └── mock_research_service.py # Testing mock services
+    └── repositories/
+        ├── memory_research_repositories.py  # In-memory storage
+        └── research_unit_of_work.py         # Transaction management
 ```
 
 ## 🎯 Key Features
 
-### Framework Agnostic Design
+### 🧠 AI Research Capabilities
 
-- **Domain Logic**: Pure Python business logic with no framework dependencies
-- **Swappable Orchestration**: LangGraph, Airflow, Celery, or custom orchestrators
-- **Pluggable Storage**: SQLite, PostgreSQL, MongoDB, or any database
-- **Flexible APIs**: FastAPI, Flask, Django, or any web framework
+- **Multi-Perspective Analysis**: Generate 2-5 expert analyst personas per topic
+- **Structured Interviews**: AI-driven expert interviews with contextual search
+- **Web Research Integration**: Real-time search via Tavily and Wikipedia APIs
+- **Citation Management**: Automatic source tracking and citation generation
+- **Quality Control**: Analyst validation and content quality assurance
 
-### Clean Architecture
+### 🤝 Human-AI Collaboration
 
-- **Dependency Inversion**: All dependencies point toward the domain layer
-- **Interface Segregation**: Small, focused interfaces for external dependencies  
-- **Single Responsibility**: Each layer has a clear, single purpose
-- **Open/Closed Principle**: Easy to extend without modifying existing code
+- **Interactive Feedback Loop**: Review and refine AI-generated analysts
+- **Progressive Disclosure**: Step-by-step workflow with user control points
+- **Transparency**: Full visibility into research process and sources
+- **Customization**: Configurable analyst count and interview depth
 
-### Testing Strategy
+### 🏛️ Production Architecture
 
-- **Unit Tests**: Test domain logic without any infrastructure
-- **Integration Tests**: Test orchestration with real or mock dependencies
-- **Contract Tests**: Ensure interfaces are correctly implemented
+- **Clean Architecture**: Domain-driven design with clear separation of concerns
+- **Framework Agnostic**: Swap LangGraph for other orchestration frameworks
+- **Dependency Inversion**: All dependencies point toward domain layer
+- **Unit of Work Pattern**: Consistent data access and transaction management
+- **Repository Pattern**: Abstracted data access with in-memory and persistent options
 
-## 🛠️ Development
+### 🔧 Technical Excellence
 
-### Available Commands
+- **Type Safety**: Full type hints with mypy validation
+- **Error Handling**: Comprehensive error handling and recovery
+- **Async/Await**: Non-blocking I/O for external API calls
+- **Logging**: Structured logging for debugging and monitoring
+- **Testing**: Unit, integration, and contract testing support
+
+## 🛠️ Configuration
+
+### Environment Variables
 
 ```bash
-# Install in development mode
-pip install -e ".[dev]"
+# Core APIs
+OPENAI_API_KEY=your_key_here
+OPENAI_MODEL=gpt-4o-mini
+TAVILY_API_KEY=your_key_here
 
-# Run tests
-pytest
-pytest -m unit          # Unit tests only
-pytest -m integration   # Integration tests only  
+# Research Configuration
+MAX_ANALYSTS_DEFAULT=3
+MAX_INTERVIEW_TURNS_DEFAULT=2
+SEARCH_MAX_RESULTS=5
+WIKIPEDIA_MAX_DOCS=2
 
-# Code quality
-black src tests         # Format code
-isort src tests         # Sort imports
-flake8 src tests        # Lint code
-mypy src                # Type checking
+# Optional: LangSmith Tracing
+LANGSMITH_API_KEY=your_key_here
+LANGSMITH_PROJECT_NAME=langgraph-research-agent-prod
+LANGSMITH_TRACING=true
 ```
 
-### Adding New Orchestration Frameworks
+### Research Parameters
 
-To add support for a new orchestration framework (e.g., Apache Airflow):
+- **Analyst Count**: 2-5 diverse expert perspectives
+- **Interview Turns**: 1-3 rounds of AI expert interviews per analyst
+- **Search Results**: 3-10 web sources per interview turn
+- **Wikipedia Docs**: 1-5 Wikipedia articles for additional context
 
-1. **Create orchestration package**:
-   ```
-   src/app/orchestration/airflow/
-   ├── __init__.py
-   ├── orchestrator.py     # Implement WorkflowOrchestrator interface
-   └── dag_builder.py      # Framework-specific logic
-   ```
+## 🧪 Usage Examples
 
-2. **Implement the interface**:
-   ```python
-   class AirflowOrchestrator(WorkflowOrchestrator):
-       async def execute_workflow(self, workflow_name, context, input_data):
-           # Translate to Airflow DAG execution
-           # Business logic stays in domain services
-   ```
+### Programmatic Usage
 
-3. **Business logic remains unchanged** - domain services work with any orchestrator!
+```python
+from app.orchestration.langgraph.research_entry import create_research_dependencies
+from app.orchestration.langgraph.research_orchestrator import ResearchOrchestrator
 
-### Adding New Storage Backends
+# Initialize research system
+research_workflow = create_research_dependencies()
+orchestrator = ResearchOrchestrator(research_workflow)
+
+# Run research with human feedback
+result = await orchestrator.run_research_with_interruption(
+    topic="Future of quantum computing",
+    max_analysts=3,
+    max_interview_turns=2
+)
+
+# Process human feedback and continue
+final_result = await orchestrator.continue_research_with_feedback(
+    human_feedback="Focus more on practical applications",
+    thread_config=result["thread_config"]
+)
+```
+
+### Command Line Usage
+
+```bash
+# Interactive mode (recommended)
+python interactive_research_assistant.py
+
+# Direct execution with parameters
+python -c "
+from interactive_research_assistant import InteractiveResearchTester
+import asyncio
+tester = InteractiveResearchTester()
+asyncio.run(tester.run_interactive_test())
+"
+```
+
+## 🔄 Extending the System
+
+### Adding New Search Providers
+
+```python
+class CustomSearchService:
+    async def search(self, query: str) -> List[SearchResult]:
+        # Implement your search logic
+        pass
+
+# Register in research_entry.py
+research_workflow = ResearchWorkflow(
+    custom_search_service=CustomSearchService(),
+    # ... other dependencies
+)
+```
+
+### Adding New LLM Providers
+
+```python
+class CustomLLMService(LLMService):
+    async def generate_response(self, messages, **kwargs) -> ExecutionResult:
+        # Implement your LLM integration
+        pass
+
+# Use in workflow configuration
+research_workflow = ResearchWorkflow(
+    llm_service=CustomLLMService(),
+    # ... other dependencies
+)
+```
+
+### Alternative Orchestration Frameworks
+
+Replace LangGraph with other orchestration systems:
+
+```python
+# Hypothetical Airflow integration
+from app.orchestration.airflow import AirflowResearchOrchestrator
+
+orchestrator = AirflowResearchOrchestrator(research_workflow)
+# Same interface, different execution engine
+```
 
 To add a new database (e.g., MongoDB):
 

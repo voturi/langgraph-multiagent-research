@@ -1,0 +1,88 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.production
+*.key
+secrets/
+secrets.json
+config/local.yaml
+config/production.yaml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Database files
+*.db
+*.sqlite3
+app.db
+
+# Logs
+*.log
+logs/
+
+# LangGraph Studio
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# LangSmith
+.langsmith/
+
+# Research assistant outputs
+create-analyst.png
+research_report_*.md
+interview_transcripts/
+
+# LangGraph API data
+.langgraph_api/
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+local/
+.local/

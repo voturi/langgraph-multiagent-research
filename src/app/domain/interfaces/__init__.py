@@ -1,23 +1,20 @@
 """Domain interfaces - Abstract interfaces for external dependencies"""
 
-from .repositories import *
-from .services import *
-from .events import *
+from .events import EventPublisher
+from .repositories import UnitOfWork
+from .research_repositories import *
+from .services import LLMService
 
 __all__ = [
-    # Repositories
-    "UserRepository",
-    "ConversationRepository", 
-    "MessageRepository",
-    "TaskRepository",
-    "WorkflowRepository",
-    
-    # Services
+    # Research Repositories
+    "ResearchProjectRepository",
+    "AnalystRepository", 
+    "InterviewRepository",
+    "ResearchSectionRepository",
+    "ResearchTopicRepository",
+    # Base interfaces
+    "UnitOfWork",
     "LLMService",
-    "ToolService",
-    "NotificationService",
-    "EventPublisher",
-    
     # Events
-    "EventHandler",
+    "EventPublisher",
 ]

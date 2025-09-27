@@ -1,0 +1,10 @@
+{
+  "dependencies": [
+    "."
+  ],
+  "graphs": {
+    "studio_demo": "app.orchestration.langgraph.studio_entry:graph",
+    "research_assistant": "app.orchestration.langgraph.research_entry:graph"
+  },
+  "env": ".env"
+}
