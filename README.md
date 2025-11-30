@@ -1,6 +1,6 @@
-# LangGraph Research Agent - Production
+# LangGraph Multi-Agent Research
 
-🔬 **A production-ready AI research assistant built with LangGraph and clean architecture principles**
+🔬 **A production-ready AI multi-agent research assistant built with LangGraph and clean architecture principles**
 
 This system creates AI analyst personas, conducts structured interviews, performs web research, and generates comprehensive research reports with human-in-the-loop feedback.
 
@@ -51,7 +51,7 @@ This research agent follows **Clean Architecture** principles with clear separat
 ```bash
 # Clone the repository
 git clone <your-repo-url>
-cd langgraph-research-agent-prod
+cd langgraph-multiagent-research
 
 # Install dependencies
 pip install -e .
@@ -168,7 +168,8 @@ src/app/
 - **Type Safety**: Full type hints with mypy validation
 - **Error Handling**: Comprehensive error handling and recovery
 - **Async/Await**: Non-blocking I/O for external API calls
-- **Logging**: Structured logging for debugging and monitoring
+- **LLM Trace Logging**: Comprehensive logging of all LLM inputs/outputs for debugging
+- **Structured Logging**: Multi-level logging for debugging and monitoring
 - **Testing**: Unit, integration, and contract testing support
 
 ## 🛠️ Configuration
@@ -189,8 +190,13 @@ WIKIPEDIA_MAX_DOCS=2
 
 # Optional: LangSmith Tracing
 LANGSMITH_API_KEY=your_key_here
-LANGSMITH_PROJECT_NAME=langgraph-research-agent-prod
+LANGSMITH_PROJECT_NAME=langgraph-multiagent-research
 LANGSMITH_TRACING=true
+
+# LLM Trace Logging (for debugging)
+LLM_TRACE_FILE_LOGGING=true
+LLM_TRACE_CONSOLE_LOGGING=true
+LLM_TRACE_LOG_DIR=./logs/llm_traces
 ```
 
 ### Research Parameters

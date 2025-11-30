@@ -2,6 +2,7 @@
 
 import logging
 import os
+import time
 from typing import Any, Dict, List, Optional
 
 from langchain_core.messages import (
@@ -12,6 +13,7 @@ from langchain_core.messages import (
 )
 
 from ...domain.entities.research import Analyst, Perspectives, SearchQuery
+from ...utils.llm_trace_logger import get_trace_logger
 from .openai_service import OpenAIService
 
 logger = logging.getLogger(__name__)
@@ -141,50 +143,127 @@ There should be no redundant sources. It should simply be:
         self, topic: str, max_analysts: int = 3, human_feedback: Optional[str] = None
     ) -> List[Analyst]:
         """Create AI analyst personas using structured output."""
+        trace_logger = get_trace_logger()
+        start_time = time.time()
+        
+        # Create messages for tracing
+        system_message_content = self.ANALYST_INSTRUCTIONS.format(
+            topic=topic,
+            human_analyst_feedback=human_feedback or "",
+            max_analysts=max_analysts,
+        )
+        messages = [
+            {"role": "system", "content": system_message_content},
+            {"role": "user", "content": "Generate set of analysts."},
+        ]
+        
+        # Log LLM request
+        trace_id = trace_logger.log_llm_request(
+            operation="create_analysts",
+            messages=messages,
+            model=self.default_model,
+            topic=topic,
+            max_analysts=max_analysts,
+        )
+        
         try:
             # Create structured output LLM
             structured_llm = self._chat_client.with_structured_output(Perspectives)
 
-            # Format instructions
-            system_message = self.ANALYST_INSTRUCTIONS.format(
-                topic=topic,
-                human_analyst_feedback=human_feedback or "",
-                max_analysts=max_analysts,
-            )
-
             # Generate analysts (use async invoke to avoid blocking calls)
             result = await structured_llm.ainvoke(
                 [
-                    SystemMessage(content=system_message),
+                    SystemMessage(content=system_message_content),
                     HumanMessage(content="Generate set of analysts."),
                 ]
             )
+            execution_time = time.time() - start_time
 
             logger.info(f"Created {len(result.analysts)} analysts for topic: {topic}")
+            
+            # Log LLM response
+            response_summary = f"Created {len(result.analysts)} analysts: " + ", ".join(
+                [f"{a.name} ({a.role})" for a in result.analysts]
+            )
+            trace_logger.log_llm_response(
+                trace_id=trace_id,
+                response=response_summary,
+                success=True,
+                execution_time=execution_time,
+                analyst_count=len(result.analysts),
+            )
+            
             return result.analysts
 
         except Exception as e:
+            execution_time = time.time() - start_time
             logger.error(f"Failed to create analysts: {e}")
+            
+            # Log failed LLM response
+            trace_logger.log_llm_response(
+                trace_id=trace_id,
+                response="",
+                success=False,
+                error=str(e),
+                execution_time=execution_time,
+            )
+            
             return self._get_mock_analysts(topic, max_analysts)
 
     async def generate_interview_question(
         self, analyst: Analyst, messages: List[Dict[str, Any]]
     ) -> str:
         """Generate an interview question from an analyst."""
+        trace_logger = get_trace_logger()
+        start_time = time.time()
+        
+        system_message_content = self.QUESTION_INSTRUCTIONS.format(goals=analyst.persona)
+        trace_messages = [{"role": "system", "content": system_message_content}] + messages
+        
+        # Log LLM request
+        trace_id = trace_logger.log_llm_request(
+            operation="generate_interview_question",
+            messages=trace_messages,
+            model=self.default_model,
+            analyst_name=analyst.name,
+            analyst_role=analyst.role,
+        )
+        
         try:
             # Convert message dicts to LangChain messages
             lc_messages = self._convert_messages_to_langchain(messages)
 
-            system_message = SystemMessage(
-                content=self.QUESTION_INSTRUCTIONS.format(goals=analyst.persona)
-            )
+            system_message = SystemMessage(content=system_message_content)
 
             response = await self._chat_client.ainvoke([system_message] + lc_messages)
+            execution_time = time.time() - start_time
+            
+            # Log LLM response
+            trace_logger.log_llm_response(
+                trace_id=trace_id,
+                response=response.content,
+                success=True,
+                execution_time=execution_time,
+            )
+            
             return response.content
 
         except Exception as e:
+            execution_time = time.time() - start_time
             logger.error(f"Failed to generate question: {e}")
-            return f"Hello, I'm {analyst.name}, {analyst.role}. I'm researching this topic and would love to learn more from your expertise. Could you share some insights?"
+            
+            fallback_message = f"Hello, I'm {analyst.name}, {analyst.role}. I'm researching this topic and would love to learn more from your expertise. Could you share some insights?"
+            
+            # Log failed LLM response
+            trace_logger.log_llm_response(
+                trace_id=trace_id,
+                response=fallback_message,
+                success=False,
+                error=str(e),
+                execution_time=execution_time,
+            )
+            
+            return fallback_message
 
     async def generate_search_query(self, messages: List[Dict[str, Any]]) -> str:
         """Generate a search query from conversation context."""
@@ -209,41 +288,115 @@ There should be no redundant sources. It should simply be:
         self, analyst: Analyst, messages: List[Dict[str, Any]], context: str
     ) -> str:
         """Generate an expert answer using provided context."""
+        trace_logger = get_trace_logger()
+        start_time = time.time()
+        
+        system_message_content = self.ANSWER_INSTRUCTIONS.format(
+            goals=analyst.persona, context=context
+        )
+        trace_messages = [{"role": "system", "content": system_message_content}] + messages
+        
+        # Log LLM request
+        trace_id = trace_logger.log_llm_request(
+            operation="generate_expert_answer",
+            messages=trace_messages,
+            model=self.default_model,
+            analyst_name=analyst.name,
+            context_length=len(context),
+        )
+        
         try:
             lc_messages = self._convert_messages_to_langchain(messages)
 
-            system_message = SystemMessage(
-                content=self.ANSWER_INSTRUCTIONS.format(
-                    goals=analyst.persona, context=context
-                )
-            )
+            system_message = SystemMessage(content=system_message_content)
 
             response = await self._chat_client.ainvoke([system_message] + lc_messages)
+            execution_time = time.time() - start_time
+            
+            # Log LLM response
+            trace_logger.log_llm_response(
+                trace_id=trace_id,
+                response=response.content,
+                success=True,
+                execution_time=execution_time,
+            )
+            
             return response.content
 
         except Exception as e:
+            execution_time = time.time() - start_time
             logger.error(f"Failed to generate expert answer: {e}")
-            return "I apologize, but I'm having trouble accessing the relevant information right now. Could you rephrase your question?"
+            
+            fallback_message = "I apologize, but I'm having trouble accessing the relevant information right now. Could you rephrase your question?"
+            
+            # Log failed LLM response
+            trace_logger.log_llm_response(
+                trace_id=trace_id,
+                response=fallback_message,
+                success=False,
+                error=str(e),
+                execution_time=execution_time,
+            )
+            
+            return fallback_message
 
     async def write_research_section(self, analyst: Analyst, context: str) -> str:
         """Write a research section based on interview context."""
+        trace_logger = get_trace_logger()
+        start_time = time.time()
+        
+        system_message_content = self.SECTION_WRITER_INSTRUCTIONS.format(
+            focus=analyst.description
+        )
+        human_message_content = f"Use this source to write your section: {context}"
+        
+        trace_messages = [
+            {"role": "system", "content": system_message_content},
+            {"role": "user", "content": human_message_content},
+        ]
+        
+        # Log LLM request
+        trace_id = trace_logger.log_llm_request(
+            operation="write_research_section",
+            messages=trace_messages,
+            model=self.default_model,
+            analyst_name=analyst.name,
+            context_length=len(context),
+        )
+        
         try:
-            system_message = SystemMessage(
-                content=self.SECTION_WRITER_INSTRUCTIONS.format(
-                    focus=analyst.description
-                )
-            )
-
-            human_message = HumanMessage(
-                content=f"Use this source to write your section: {context}"
-            )
+            system_message = SystemMessage(content=system_message_content)
+            human_message = HumanMessage(content=human_message_content)
 
             response = await self._chat_client.ainvoke([system_message, human_message])
+            execution_time = time.time() - start_time
+            
+            # Log LLM response
+            trace_logger.log_llm_response(
+                trace_id=trace_id,
+                response=response.content,
+                success=True,
+                execution_time=execution_time,
+            )
+            
             return response.content
 
         except Exception as e:
+            execution_time = time.time() - start_time
             logger.error(f"Failed to write research section: {e}")
-            return f"## Research Section: {analyst.role}\n\nUnable to generate section content."
+            
+            fallback_message = f"## Research Section: {analyst.role}\n\nUnable to generate section content."
+            
+            # Log failed LLM response
+            trace_logger.log_llm_response(
+                trace_id=trace_id,
+                response=fallback_message,
+                success=False,
+                error=str(e),
+                execution_time=execution_time,
+            )
+            
+            return fallback_message
 
     def _convert_messages_to_langchain(self, messages: List[Dict[str, Any]]) -> List:
         """Convert message dictionaries to LangChain message objects."""

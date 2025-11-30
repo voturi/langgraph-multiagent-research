@@ -3,9 +3,9 @@ requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "langgraph-research-agent-prod"
+name = "langgraph-multiagent-research"
 version = "0.1.0"
-description = "Production LangGraph Research Agent - Interactive Test"
+description = "Production LangGraph Multi-Agent Research Assistant"
 requires-python = ">=3.9"
 
 dependencies = [

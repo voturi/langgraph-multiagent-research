@@ -2,6 +2,7 @@
 
 import logging
 import os
+import time
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -9,6 +10,7 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
 from ...domain.interfaces.services import LLMService
 from ...domain.models.value_objects import ExecutionResult
+from ...utils.llm_trace_logger import get_trace_logger
 
 logger = logging.getLogger(__name__)
 
@@ -68,9 +70,21 @@ class OpenAIService(LLMService):
         **kwargs,
     ) -> ExecutionResult:
         """Generate response from messages"""
+        trace_logger = get_trace_logger()
+        start_time = time.time()
+        current_model = model or self.default_model
+        
+        # Log LLM request
+        trace_id = trace_logger.log_llm_request(
+            operation="generate_response",
+            messages=messages,
+            model=current_model,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            **kwargs,
+        )
+        
         try:
-            current_model = model or self.default_model
-
             chat_client = self._chat_client
             if model and model != self.default_model:
                 chat_client = ChatOpenAI(
@@ -91,13 +105,15 @@ class OpenAIService(LLMService):
                 f"Generating response with {current_model} for {len(messages)} messages"
             )
             response = await chat_client.ainvoke(langchain_messages)
-
-            return ExecutionResult(
+            execution_time = time.time() - start_time
+            
+            usage_metadata = getattr(response, "usage_metadata", {})
+            result = ExecutionResult(
                 success=True,
                 data={
                     "response": response.content,
                     "model": current_model,
-                    "usage": getattr(response, "usage_metadata", {}),
+                    "usage": usage_metadata,
                     "message_count": len(messages),
                 },
                 metadata={
@@ -107,9 +123,31 @@ class OpenAIService(LLMService):
                     "max_tokens": max_tokens,
                 },
             )
+            
+            # Log LLM response
+            trace_logger.log_llm_response(
+                trace_id=trace_id,
+                response=response.content,
+                success=True,
+                execution_time=execution_time,
+                usage=usage_metadata,
+            )
+            
+            return result
 
         except Exception as e:
+            execution_time = time.time() - start_time
             logger.error(f"Error generating OpenAI response: {str(e)}")
+            
+            # Log failed LLM response
+            trace_logger.log_llm_response(
+                trace_id=trace_id,
+                response="",
+                success=False,
+                error=str(e),
+                execution_time=execution_time,
+            )
+            
             return ExecutionResult(
                 success=False,
                 error=str(e),
